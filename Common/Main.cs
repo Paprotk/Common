@@ -15,7 +15,7 @@ internal static class Core
         AttributeCache.Initialize();
         InvokeOnEvent.Initialize();
     }
-
+    //Test
     [InvokeOnWorldEvent(Event.OnStartupApp)]
     public static void OnStartupApp()
     {
