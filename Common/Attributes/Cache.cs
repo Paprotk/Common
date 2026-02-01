@@ -101,7 +101,8 @@ internal static class AttributeCache
                 if (attrType.Name.Contains("CompilerGenerated") ||
                     attrType.Name.Contains("Debugger") ||
                     attrType.Name.Contains("Tunable") ||
-                    attrType.Namespace?.StartsWith("System.") == true)
+                    attrType.Namespace?.StartsWith("System.") == true ||
+                    attrType.Namespace?.StartsWith("Sims3.") == true)
                 {
                     continue;
                 }
