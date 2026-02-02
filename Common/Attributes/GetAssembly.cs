@@ -16,8 +16,10 @@ public class GetAssemblyAttribute(string assemblyName) : Attribute  //Must be de
 
 internal static class AssemblyChecker
 {
+    [InvokeOnWorldEvent(Event.OnStartupApp)]
     public static void Initialize()
     {
+        Log("AssemblyChecker  initialized");
         var fieldsWithAttrs = AttributeCache.GetFieldsWithAttributeEx<GetAssemblyAttribute>();
         if (fieldsWithAttrs.Count == 0) return;
 

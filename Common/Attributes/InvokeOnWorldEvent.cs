@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using Sims3.SimIFace;
 using static Arro.Common.Logger;
@@ -30,8 +31,12 @@ internal static class InvokeOnEvent
     {
         var methodsWithAttrs = AttributeCache.GetMethodsWithAttributeEx<InvokeOnWorldEvent>();
         if (methodsWithAttrs.Count == 0) return;
-
-        foreach (var item in methodsWithAttrs)
+        
+        var sortedMethods = methodsWithAttrs.OrderByDescending(item => 
+            item.Method.DeclaringType?.Namespace?.StartsWith("Arro.Common") ?? false
+        ).ToList();
+        
+        foreach (var item in sortedMethods)
         {
             SubscribeMethodToEvent(item.Method, item.Attribute.EventType);
         }
@@ -63,21 +68,27 @@ internal static class InvokeOnEvent
         switch (eventType)
         {
             case Event.OnWorldLoadFinished:
+                World.sOnWorldLoadFinishedEventHandler -= handler;
                 World.sOnWorldLoadFinishedEventHandler += handler;
                 break;
             case Event.OnStartupApp:
+                World.sOnStartupAppEventHandler -= handler;
                 World.sOnStartupAppEventHandler += handler;
                 break;
             case Event.OnEnterNotInWorld:
+                World.sOnEnterNotInWorldEventHandler -= handler;
                 World.sOnEnterNotInWorldEventHandler += handler;
                 break;
             case Event.OnLeaveNotInWorld:
+                World.sOnLeaveNotInWorldEventHandler -= handler;
                 World.sOnLeaveNotInWorldEventHandler += handler;
                 break;
             case Event.OnWorldQuit:
+                World.sOnWorldQuitEventHandler -= handler;
                 World.sOnWorldQuitEventHandler += handler;
                 break;
             case Event.OnQuitApp:
+                World.sOnQuitAppEventHandler -= handler;
                 World.sOnQuitAppEventHandler += handler;
                 break;
             default: 
