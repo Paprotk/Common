@@ -1,6 +1,7 @@
 #if DEBUG
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sims3.Gameplay.Core;
 using Sims3.UI;
@@ -25,28 +26,28 @@ internal static class Console
     }
 
     [MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern bool _IsPresent();
+    private static extern bool _IsPresent();
     
     [MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern void _Create();
+    private static extern void _Create();
 
     [MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern void _Close();
+    private static extern void _Close();
 
     [MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern unsafe void _WriteLine(sbyte* utf8Text);
+    private static extern unsafe void _WriteLine(sbyte* utf8Text);
 
     [MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern unsafe void _StartLogging(sbyte* filenameUtf8);
+    private static extern unsafe void _StartLogging(sbyte* filenameUtf8);
 
     [MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern unsafe void _StopLogging(sbyte* filenameUtf8);
+    private static extern unsafe void _StopLogging(sbyte* filenameUtf8);
 	
 	[MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern void _Clear();
+    private static extern void _Clear();
 	
 	[MethodImpl(MethodImplOptions.InternalCall)]
-    public static extern void _Beep();
+    private static extern void _Beep();
     
     public static unsafe void WriteLine(string text)
     {
@@ -55,10 +56,9 @@ internal static class Console
             SimpleMessageDialog.Show("Sims3ConsolePlugin","[WriteLine] The Console is not present!");
             return;
         }
-        using (Utf8Ptr utf8Ptr = text) // Implicit conversion from string to Utf8Ptr
-        {
-            _WriteLine(utf8Ptr);
-        }
+
+        using Utf8Ptr utf8Ptr = text;
+        _WriteLine(utf8Ptr);
     }
     
     public static unsafe void StartLogging(string filename)
@@ -68,10 +68,9 @@ internal static class Console
             SimpleMessageDialog.Show("Sims3ConsolePlugin","[StartLogging] The Console is not present!");
             return;
         }
-        using (Utf8Ptr utf8Ptr = filename) 
-        {
-            _StartLogging(utf8Ptr);
-        }
+
+        using Utf8Ptr utf8Ptr = filename;
+        _StartLogging(utf8Ptr);
     }
     
     public static unsafe void StopLogging(string filename)
@@ -81,10 +80,9 @@ internal static class Console
             SimpleMessageDialog.Show("Sims3ConsolePlugin","[StopLogging] The console is not present! Any logging done before the console was closed is already saved to a file.");
             return;
         }
-        using (Utf8Ptr utf8Ptr = filename)
-        {
-            _StopLogging(utf8Ptr);
-        }
+
+        using Utf8Ptr utf8Ptr = filename;
+        _StopLogging(utf8Ptr);
     }
     
     public static void Create()
@@ -156,16 +154,16 @@ internal static class Console
             {
                 SimpleMessageDialog.Show("Sims3ConsolePlugin","[WriteLine] No parameters provided!");
             }
-            if (parameters != null && parameters.Length > 0)
+            if (parameters is { Length: > 0 })
             {
                 StringBuilder sb = new StringBuilder();
 
-                for (int i = 0; i < parameters.Length; i++)
+                foreach (var t in parameters)
                 {
-                    if (parameters[i] != null)
+                    if (t != null)
                     {
                         if (sb.Length > 0) sb.Append(" ");
-                        sb.Append(parameters[i]);
+                        sb.Append(t);
                     }
                 }
 
@@ -218,32 +216,32 @@ internal static class Console
 public unsafe struct Utf8Ptr : IDisposable
 {
     private byte[] _bytes;
-    private sbyte* _ptr;
+    private GCHandle _handle;
 
     public Utf8Ptr(string str)
     {
         _bytes = Encoding.UTF8.GetBytes(str + "\0");
-        fixed (byte* ptr = _bytes)
-        {
-            _ptr = (sbyte*)ptr;
-        }
+        _handle = GCHandle.Alloc(_bytes, GCHandleType.Pinned);
+        Pointer = (sbyte*)_handle.AddrOfPinnedObject().ToPointer();
     }
 
-    public sbyte* Pointer => _ptr;
+    public sbyte* Pointer { get; private set; }
 
     public void Dispose()
     {
+        if (_handle.IsAllocated)
+        {
+            _handle.Free();
+        }
         _bytes = null;
-        _ptr = null;
+        Pointer = null;
     }
 
-    // Implicit conversion from Utf8Ptr to sbyte*
     public static implicit operator sbyte*(Utf8Ptr utf8Ptr)
     {
         return utf8Ptr.Pointer;
     }
 
-    // Implicit conversion from string to Utf8Ptr
     public static implicit operator Utf8Ptr(string str)
     {
         return new Utf8Ptr(str);

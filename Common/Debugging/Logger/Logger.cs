@@ -34,7 +34,7 @@ internal abstract class Logger
         {
             var errorMessage = message ?? "Assertion failed";
             
-            string fileName = filePath.Split('\\', '/').Last();
+            var fileName = filePath.Split('\\', '/').Last();
 
             Console.WriteLine($"[{Core.modName}] {errorMessage}");
             Console.WriteLine($"  at {memberName} in {fileName}:line {lineNumber}");
