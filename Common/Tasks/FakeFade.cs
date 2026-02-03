@@ -28,10 +28,7 @@ public class FakeFade
             default: return t;
         }
     }
-
-    // Maksymalny skok czasu w milisekundach. 
-    // Jeśli klatka trwała dłużej (lag), udajemy że trwała tylko tyle.
-    // 50ms = minimalnie 20 FPS dla animacji.
+    
     private const float MAX_DELTA_TIME = 50f; 
 
     public class FadeIn : Task
@@ -53,7 +50,6 @@ public class FakeFade
             elapsedTime = 0f;
             isDisposed = false;
             
-            // Pobieramy czas startu
             lastTick = DateTime.UtcNow.Ticks;
 
             if (targetWindow != null && !targetWindow.Disposed)
@@ -74,12 +70,9 @@ public class FakeFade
             }
 
             long currentTick = DateTime.UtcNow.Ticks;
-            // Obliczamy ile ms minęło od ostatniej klatki
             float deltaMs = (currentTick - lastTick) / 10000f;
             lastTick = currentTick;
-
-            // ZABEZPIECZENIE: Jeśli gra się zacięła na 1 sekundę (1000ms),
-            // liczymy tylko 50ms. Animacja zwolni, ale nie przeskoczy.
+            
             deltaMs = Math.Min(deltaMs, MAX_DELTA_TIME);
 
             elapsedTime += deltaMs;
@@ -153,8 +146,7 @@ public class FakeFade
             long currentTick = DateTime.UtcNow.Ticks;
             float deltaMs = (currentTick - lastTick) / 10000f;
             lastTick = currentTick;
-
-            // Zabezpieczenie przed skokami
+            
             deltaMs = Math.Min(deltaMs, MAX_DELTA_TIME);
 
             elapsedTime += deltaMs;
@@ -238,8 +230,7 @@ public class FakeFade
             long currentTick = DateTime.UtcNow.Ticks;
             float deltaMs = (currentTick - lastTick) / 10000f;
             lastTick = currentTick;
-
-            // Zabezpieczenie przed skokami
+            
             deltaMs = Math.Min(deltaMs, MAX_DELTA_TIME);
 
             elapsedTime += deltaMs;

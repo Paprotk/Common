@@ -95,6 +95,12 @@ internal static class WindowExtensions
         window.ShadeColor = shadeColor;
     }
     
+    /// <summary>
+    /// Starts a smooth fade-in animation by gradually increasing the window's opacity.
+    /// </summary>
+    /// <param name="window">The target window to fade in.</param>
+    /// <param name="durationMs">The duration of the animation in milliseconds.</param>
+    /// <param name="ease">The easing function to apply for the transition.</param>
     public static void FadeIn(this WindowBase window, int durationMs = 300, FakeFade.EaseType ease = FakeFade.EaseType.EaseInOut)
     {
         if (window != null && !window.Disposed)
@@ -103,6 +109,13 @@ internal static class WindowExtensions
         }
     }
 
+    /// <summary>
+    /// Starts a smooth fade-out animation by gradually decreasing the window's opacity.
+    /// </summary>
+    /// <param name="window">The target window to fade out.</param>
+    /// <param name="durationMs">The duration of the animation in milliseconds.</param>
+    /// <param name="ease">The easing function to apply for the transition.</param>
+    /// <param name="hide">If true, sets the window's Visibility to false once the animation completes.</param>
     public static void FadeOut(this WindowBase window, int durationMs = 300, FakeFade.EaseType ease = FakeFade.EaseType.EaseInOut, bool hide = true)
     {
         if (window != null && !window.Disposed)
@@ -111,6 +124,13 @@ internal static class WindowExtensions
         }
     }
 
+    /// <summary>
+    /// Performs a cross-fade transition by simultaneously fading out one window and fading in another.
+    /// </summary>
+    /// <param name="fadeOutWindow">The window that will fade out and be hidden.</param>
+    /// <param name="fadeInWindow">The window that will fade in and be shown.</param>
+    /// <param name="durationMs">The total duration of the cross-fade in milliseconds.</param>
+    /// <param name="ease">The easing function to apply to both windows.</param>
     public static void CrossFadeTo(this WindowBase fadeOutWindow, WindowBase fadeInWindow, int durationMs = 500, FakeFade.EaseType ease = FakeFade.EaseType.EaseInOut)
     {
         if (fadeOutWindow != null && !fadeOutWindow.Disposed && fadeInWindow != null && !fadeInWindow.Disposed)
