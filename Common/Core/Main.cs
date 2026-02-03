@@ -13,12 +13,6 @@ internal static class Core
     {
         modName = name;
         AttributeCache.Initialize();
-        InvokeOnEvent.Initialize(); // This needs to be here
-    }
-    
-    [InvokeOnWorldEvent(Event.OnStartupApp)]
-    public static void OnStartupApp()
-    {
-        //AttributeCache.PrintStats();
+        InvokeOnEvent.Initialize(); // This allows other attributes to use [InvokeOnEvent()] and Initialize()
     }
 }

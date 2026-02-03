@@ -9,7 +9,7 @@ namespace Arro.Common;
 /// </summary>
 /// <param name="assemblyName">The simple name of the assembly to look for (e.g., "Sims3GameplaySystems").</param>
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-public class GetAssemblyAttribute(string assemblyName) : Attribute  //Must be defined as public
+internal class GetAssemblyAttribute(string assemblyName) : Attribute  //Must be defined as public
 {
     public string AssemblyName { get; } = assemblyName;
 }
@@ -19,7 +19,6 @@ internal static class AssemblyChecker
     [InvokeOnWorldEvent(Event.OnStartupApp)]
     public static void Initialize()
     {
-        Log("AssemblyChecker  initialized");
         var fieldsWithAttrs = AttributeCache.GetFieldsWithAttributeEx<GetAssemblyAttribute>();
         if (fieldsWithAttrs.Count == 0) return;
 

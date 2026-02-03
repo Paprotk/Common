@@ -1,4 +1,8 @@
-﻿namespace Arro.Common;
+﻿using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
+
+namespace Arro.Common;
 
 internal abstract class Logger
 {
@@ -6,6 +10,7 @@ internal abstract class Logger
     /// Writes a message to the console prefixed with the mod name.
     /// </summary>
     /// <param name="message">The object or string to log.</param>
+    [Conditional("DEBUG")]
     public static void Log(object message)
     {
         Console.WriteLine($"[{Core.modName}] {message}");
@@ -17,19 +22,22 @@ internal abstract class Logger
     /// </summary>
     /// <param name="condition">The condition to verify.</param>
     /// <param name="message">Optional custom error message.</param>
-    public static void Assert(bool condition, string message = null)
+    [Conditional("DEBUG")]
+    public static void Assert(
+        bool condition, 
+        string message = null,
+        [CallerMemberName] string memberName = "",
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
     {
         if (!condition)
         {
-            var stackTrace = new System.Diagnostics.StackTrace(true);
-            var callerFrame = stackTrace.GetFrame(1);
-            var method = callerFrame.GetMethod();
-            var methodName = method.Name;
-            var className = method.DeclaringType?.FullName ?? "Unknown";
             var errorMessage = message ?? "Assertion failed";
-        
+            
+            string fileName = filePath.Split('\\', '/').Last();
+
             Console.WriteLine($"[{Core.modName}] {errorMessage}");
-            Console.WriteLine($"  at {className}.{methodName}");
+            Console.WriteLine($"  at {memberName} in {fileName}:line {lineNumber}");
         }
     }
 }

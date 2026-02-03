@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Sims3.SimIFace;
 
 namespace Arro.Common;
 
@@ -27,20 +26,16 @@ internal static class AttributeCache
     }
 
     private static Assembly assembly;
-    private static float elapsedTime;
     public static void Initialize()
     {
         if (_initialized) return;
         assembly = Assembly.GetExecutingAssembly();
         var types = assembly.GetTypes();
-        var stopwatch = StopWatch.Create(StopWatch.TickStyles.Milliseconds);
         foreach (var type in types)
         {
             CacheMethods(type);
             CacheFields(type);
         }
-        stopwatch.Stop();
-        elapsedTime = stopwatch.GetElapsedTimeFloat();
         _initialized = true;
     }
 
@@ -222,7 +217,6 @@ internal static class AttributeCache
     public static void PrintStats()
     {
         Logger.Log("=== Attribute Cache ===");
-        Logger.Log($"Took {elapsedTime}ms");
         Logger.Log($"Total methods with attributes: {_cachedMethodAttributes.Count}");
         Logger.Log($"Total fields with attributes: {_cachedFieldAttributes.Count}");
         

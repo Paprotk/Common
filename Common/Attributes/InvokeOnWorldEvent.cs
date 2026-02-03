@@ -10,12 +10,12 @@ namespace Arro.Common;
 /// Marks a method to be automatically invoked when a specific <see cref="Arro.Common.Event"/> occurs.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public class InvokeOnWorldEvent(Event type) : Attribute //Must be defined as public
+internal class InvokeOnWorldEvent(Event type) : Attribute //Must be defined as public
 {
     public Event EventType { get; } = type;
 }
 
-public enum Event
+internal enum Event
 {
     OnStartupApp,
     OnEnterNotInWorld,

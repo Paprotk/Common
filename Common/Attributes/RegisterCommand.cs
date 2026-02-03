@@ -13,8 +13,8 @@ namespace Arro.Common;
 /// <c>static int MethodName(object[] parameters)</c>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method)]
-public class RegisterCommandAttribute(string name, string description, Commands.CommandType commandType = Commands.CommandType.General)
-    : Attribute //Must be defined as public
+internal class RegisterCommandAttribute(string name, string description, Commands.CommandType commandType = Commands.CommandType.General)
+    : Attribute
 {
     public string Name { get; } = name;
     public string Description { get; } = description;
@@ -26,7 +26,6 @@ internal static class RegisterCommand
     [InvokeOnWorldEvent(Event.OnStartupApp)]
     public static void Initialize()
     {
-        Log("Register  initialized");
         var methodsWithAttrs = AttributeCache.GetMethodsWithAttributeEx<RegisterCommandAttribute>();
         if (methodsWithAttrs.Count == 0) return;
             
