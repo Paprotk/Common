@@ -1,3 +1,4 @@
+using Arro.MCR.Common.Tasks;
 using Sims3.SimIFace;
 using Sims3.UI;
 
@@ -76,5 +77,45 @@ internal static class WindowExtensions
         Rect area = window.Area;
         area.Width = width * TinyUIFix.Scale;
         window.Area = area;
+    }
+
+    /// <summary>
+    /// Sets the transparency of the window by updating the Alpha channel of its ShadeColor.
+    /// </summary>
+    /// <remarks>
+    /// This method preserves the existing Red, Green, and Blue values of the window's 
+    /// ShadeColor, modifying only the opacity.
+    /// </remarks>
+    /// <param name="window">The <see cref="WindowBase"/> instance to modify.</param>
+    /// <param name="opacity">The alpha value (0 for fully transparent, 255 for fully opaque).</param>
+    public static void SetOpacity(this WindowBase window, int opacity)
+    {
+        if (window == null) return;
+        var shadeColor = new Color(window.ShadeColor.Red, window.ShadeColor.Green, window.ShadeColor.Blue, opacity);
+        window.ShadeColor = shadeColor;
+    }
+    
+    public static void FadeIn(this WindowBase window, int durationMs = 300, FakeFade.EaseType ease = FakeFade.EaseType.EaseInOut)
+    {
+        if (window != null && !window.Disposed)
+        {
+            Simulator.AddObject(new FakeFade.FadeIn(window, durationMs, ease));
+        }
+    }
+
+    public static void FadeOut(this WindowBase window, int durationMs = 300, FakeFade.EaseType ease = FakeFade.EaseType.EaseInOut, bool hide = true)
+    {
+        if (window != null && !window.Disposed)
+        {
+            Simulator.AddObject(new FakeFade.FadeOut(window, durationMs, ease, 0, hide));
+        }
+    }
+
+    public static void CrossFadeTo(this WindowBase fadeOutWindow, WindowBase fadeInWindow, int durationMs = 500, FakeFade.EaseType ease = FakeFade.EaseType.EaseInOut)
+    {
+        if (fadeOutWindow != null && !fadeOutWindow.Disposed && fadeInWindow != null && !fadeInWindow.Disposed)
+        {
+            Simulator.AddObject(new FakeFade.CrossFade(fadeOutWindow, fadeInWindow, durationMs, ease));
+        }
     }
 }
