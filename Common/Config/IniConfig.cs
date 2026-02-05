@@ -21,16 +21,20 @@ internal static class IniParser
         var lines = new List<string>();
         var type = typeof(T);
 
-        // Get both Fields and Properties
         foreach (var member in type.GetMembers(Flags))
         {
-            if (member is FieldInfo field)
+            object val = null;
+            if (member is FieldInfo f) val = f.GetValue(obj);
+            else if (member is PropertyInfo p && p.CanRead) val = p.GetValue(obj, null);
+
+            if (val != null)
             {
-                lines.Add($"{field.Name}={field.GetValue(obj)}");
-            }
-            else if (member is PropertyInfo prop && prop.CanRead)
-            {
-                lines.Add($"{prop.Name}={prop.GetValue(obj, null)}");
+                // Escape: | -> ||, = -> |e, ; -> |s
+                string safeValue = val.ToString()
+                    .Replace("|", "||")
+                    .Replace("=", "|e")
+                    .Replace(";", "|s");
+                lines.Add(member.Name + "=" + safeValue);
             }
         }
         return string.Join(";", lines.ToArray());
@@ -41,27 +45,27 @@ internal static class IniParser
         var obj = new T();
         if (string.IsNullOrEmpty(data)) return obj;
 
-        var type = typeof(T);
         foreach (var pair in data.Split(';'))
         {
-            var kv = pair.Split('=');
-            if (kv.Length != 2) continue;
+            int idx = pair.IndexOf('=');
+            if (idx <= 0) continue;
 
-            var name = kv[0];
-            var valueStr = kv[1];
-            
-            // Try to find a Field first, then a Property
+            string name = pair.Substring(0, idx);
+            // Unescape: |s -> ;, |e -> =, || -> |
+            string rawValue = pair.Substring(idx + 1)
+                .Replace("|s", ";")
+                .Replace("|e", "=")
+                .Replace("||", "|");
+
+            var type = typeof(T);
             var field = type.GetField(name, Flags);
-            if (field != null)
-            {
-                field.SetValue(obj, Convert.ChangeType(valueStr, field.FieldType));
+            if (field != null) {
+                field.SetValue(obj, Convert.ChangeType(rawValue, field.FieldType));
                 continue;
             }
-
             var prop = type.GetProperty(name, Flags);
-            if (prop != null && prop.CanWrite)
-            {
-                prop.SetValue(obj, Convert.ChangeType(valueStr, prop.PropertyType), null);
+            if (prop != null && prop.CanWrite) {
+                prop.SetValue(obj, Convert.ChangeType(rawValue, prop.PropertyType), null);
             }
         }
         return obj;
@@ -80,11 +84,14 @@ public abstract class IniConfig
     /// This method serializes the object into a string and embeds it into the Bio field of a dummy Sim. 
     /// It performs an "upsert" by scanning the SavedSims folder for any existing Sim with a FirstName 
     /// matching <paramref name="fileName"/> and deleting it before writing the new data.
+    /// This method is quite resource intensive as it relies on P/Invoke so use it when necessary.
     /// </remarks>
     public static void Save<T>(string fileName, T config) where T : class
     {
+        var startTime = DateTime.Now;
         Logger.Assert(GameUtils.IsValidFilename(fileName));
-        var singleton = CASLogic.GetSingleton();
+        if (!GameUtils.IsValidFilename(fileName)) return; //fileName cannot contain illegal characters
+        var singleton = CASLogic.GetSingleton(); //Works only when world is loaded
         if (singleton == null || singleton.SimDescriptions.Count == 0) return;
         
         var serializedData = IniParser.Serialize(config);
@@ -92,16 +99,15 @@ public abstract class IniConfig
         for (var i = 0; i < singleton.SimDescriptions.Count; i++)
         {
             var key = singleton.SimDescriptions[i];
-            var cat = ResourceKeyContentCategory.kLocalUserCreated;
-            var simDescription = singleton.GetSimDescription(key, ref cat);
+            var category = ResourceKeyContentCategory.kLocalUserCreated;
+            var simDescription = singleton.GetSimDescription(key, ref category);
             
-            if (simDescription == null || cat != ResourceKeyContentCategory.kLocalUserCreated) continue;
+            if (simDescription == null || category != ResourceKeyContentCategory.kLocalUserCreated) continue;
 
-            if (simDescription.FirstName == fileName)
-            {
-                if (Responder.Instance?.CASModel != null)
-                    Responder.Instance.CASModel.DeleteSimFromContent(key);
-            }
+            if (simDescription.FirstName != fileName) continue;
+            if (Responder.Instance?.CASModel != null)
+                Responder.Instance.CASModel.DeleteSimFromContent(key);
+            break;
         }
         var iniSim = new SimDescription();
         iniSim.Fixup(); //Essential!
@@ -111,13 +117,15 @@ public abstract class IniConfig
         {
             DownloadContent.SaveCustomSim(iniSim, fileName,
                 new ResourceKey(0x0000000000000000, 0x025ed6f4, 0x00000000), //Generate Empty thumbnail
-                0, 0u); // Setting ageGenderSpecies to 0u will hide this sim from CAS bin UI
-            Logger.Log($"Config {fileName} saved successfully");
+                0, 0u); //Setting ageGenderSpecies to 0u will hide this sim from CAS bin UI
         }
         catch (Exception e)
         {
             Logger.Log(e);
         }
+        var endTime = DateTime.Now;
+        var duration = endTime - startTime;
+        Logger.Log($"Saved config: {fileName}, took {duration.TotalSeconds:F3}s");
         iniSim.Dispose();
     }
 
@@ -136,8 +144,10 @@ public abstract class IniConfig
     /// </remarks>
     public static T Load<T>(string fileName) where T : class, new()
     {
+        var startTime = DateTime.Now;
         Logger.Assert(GameUtils.IsValidFilename(fileName));
-        var singleton = CASLogic.GetSingleton();
+        if (!GameUtils.IsValidFilename(fileName)) return new T(); //fileName cannot contain illegal characters
+        var singleton = CASLogic.GetSingleton(); //Works only when world is loaded
         if (singleton == null) return new T();
 
         for (var i = 0; i < singleton.SimDescriptions.Count; i++)
@@ -145,24 +155,20 @@ public abstract class IniConfig
             var key = singleton.SimDescriptions[i];
             var category = ResourceKeyContentCategory.kLocalUserCreated;
             var simDescription = singleton.GetSimDescription(key, ref category);
-            
-            if (simDescription != null && category == ResourceKeyContentCategory.kLocalUserCreated)
+
+            if (simDescription == null || category != ResourceKeyContentCategory.kLocalUserCreated) continue;
+            if (simDescription.FirstName != fileName) continue;
+            if (string.IsNullOrEmpty(simDescription.Bio)) continue;
+            try
             {
-                if (simDescription.FirstName == fileName)
-                {
-                    if (!string.IsNullOrEmpty(simDescription.Bio))
-                    {
-                        try
-                        {
-                            Logger.Log($"Loading config: {fileName}");
-                            return IniParser.Deserialize<T>(simDescription.Bio);
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.Log(e);
-                        }
-                    }
-                }
+                var endTime = DateTime.Now;
+                var duration = endTime - startTime;
+                Logger.Log($"Loading config: {fileName}, took {duration.TotalSeconds:F3}s");
+                return IniParser.Deserialize<T>(simDescription.Bio);
+            }
+            catch (Exception e)
+            {
+                Logger.Log(e);
             }
         }
         
