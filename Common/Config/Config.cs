@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using Sims3.Gameplay;
 using Sims3.Gameplay.ActorSystems;
 using Sims3.Gameplay.CAS;
+using Sims3.Gameplay.Core;
 using Sims3.Gameplay.UI;
 using Sims3.SimIFace;
 using Sims3.SimIFace.CAS;
@@ -72,33 +74,23 @@ public abstract class IniConfig
                     Responder.Instance.CASModel.DeleteSimFromContent(key);
             }
         }
-        
-        ResourceKey templateKey = singleton.SimDescriptions[5];
-        ResourceKeyContentCategory tCat = ResourceKeyContentCategory.kInstalled;
-        SimDescription templateSim = new SimDescription();
-        SimDescription baseSim = singleton.GetSimDescription(templateKey, ref tCat) as SimDescription;
-        ResourceKey skipOutfitKey = new ResourceKey(
-            0x0000000000000001,  // Instance (non-zero to avoid null checks)
-            0x025ed6f4,          // The special type that triggers alternate path
-            0x00000001           // Base game group
-        );
-        if (templateSim != null)
+
+        var iniSim = new SimDescription();
+        iniSim.Fixup(); //Crucial!!!!
+        iniSim.FirstName = firstName;
+        iniSim.LastName = lastName;
+        iniSim.Bio = safeData;
+        try
         {
-            templateSim.Fixup(); //Crucial
-            templateSim.FirstName = firstName;
-            templateSim.LastName = lastName;
-            templateSim.Bio = safeData;
-            templateSim.AgeGenderSpecies = CASAgeGenderFlags.None;
-            templateSim.Outfits = baseSim.Outfits;
-            try {
-                DownloadContent.SaveCustomSim((IExportableContent) templateSim, templateSim.FirstName + "_" + templateSim.LastName,
-                   skipOutfitKey,
-                    0, 0u);
+            DownloadContent.SaveCustomSim((IExportableContent)iniSim,
+                iniSim.FirstName + "_" + iniSim.LastName,
+                new ResourceKey(0x0000000000000000, 0x025ed6f4, 0x00000000),
+                0, 0u);
                 
-                Logger.Log($"Config saved as INI Sim: {firstName}_{lastName} outfit : {templateSim.GetOutfit(OutfitCategories.Everyday, 0).Key}");
-            } catch (Exception e) {
-                Logger.Log("Crash prevented during SaveSim: " + e.Message);
-            }
+            Logger.Log($"Config saved as INI Sim: {firstName}_{lastName}");
+            iniSim.Dispose();
+        } catch (Exception e) {
+            Logger.Log("Crash prevented during SaveSim: " + e.Message);
         }
     }
 
