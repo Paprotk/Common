@@ -3,7 +3,7 @@ using Arro.Common;
 using Sims3.SimIFace;
 using Sims3.UI;
 
-namespace Arro.MCR.Common.Tasks;
+namespace Arro.Common.Tasks;
 
 public class FakeFade
 {
