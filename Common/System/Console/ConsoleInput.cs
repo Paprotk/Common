@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 #if DEBUG
+using Sims3.Gameplay;
+using Sims3.Gameplay.Core;
+using Sims3.SimIFace;
 using Arro.Common;
 using Sims3.UI;
 
-internal static class ConsolePollInput
+internal static class ConsoleInput
 {
     /// <summary>
     /// Fired every tick a non-empty line arrives from the console.
@@ -16,11 +20,39 @@ internal static class ConsolePollInput
     {
         var gameMainWindow = UIManager.GetMainWindow();
         gameMainWindow.Tick += OnTick;
+        
+        if (!Commands.sGameCommands.mCommands.ContainsKey("ConsoleCreate")) //Register once per game
+        {
+            OnConsoleInput += InternalOnConsoleInput;
+        }
+        
     }
-
+    
     private static void OnTick(WindowBase sender, UIEventArgs eventArgs)
     {
         PollInput();
+    }
+
+    private static void InternalOnConsoleInput(string value)
+    {
+        if (value == "quit")
+        {
+            GameStates.TransitionToGameStateQuitNoCheck();
+        }
+        if (value == "mainmenu")
+        {
+            GameStates.TransitionToLeaveInWorld();
+        }
+        if (value.StartsWith("command "))
+        {
+            string command = value.Substring("command ".Length);
+
+            bool success = CommandSystem.ExecuteCommandString(command);
+
+            Console.WriteLine(success
+                ? $"Command: {command}"
+                : $"Failed to execute: {command}");
+        }
     }
 
     public static void PollInput()
